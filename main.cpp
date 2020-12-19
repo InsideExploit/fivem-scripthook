@@ -109,20 +109,20 @@ int main()
     uint8_t enable[] = { 0x1 };
     uint8_t disable[] = { 0x0 };
 
-    while (1)
+    while (4)
     {
-        if (GetAsyncKeyState(hotkeyEnable) & 0x1)
+        if (GetKeyState(hotkeyEnable) & 0x1)
         {
             std::cout << "[SUCCESS] ScriptHook enabled. [5.0]\n";
             WriteProcessMemory(hProcess, (LPVOID)(base + offset), enable, sizeof(enable), NULL);
-            Sleep(1);
+            Sleep(4);
         }
 
-        if (GetAsyncKeyState(hotkeyNormal) & 0x1)
+        if (GetKeyState(hotkeyNormal) & 0x1)
         {
             std::cout << "[SUCCESS] ScriptHook disabled. [5.1]\n";
             WriteProcessMemory(hProcess, (LPVOID)(base + offset), disable, sizeof(disable), NULL);
-            Sleep(1);
+            Sleep(4);
         }
     }
     Sleep(1);
