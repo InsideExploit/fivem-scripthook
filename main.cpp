@@ -113,14 +113,14 @@ int main()
     {
         if (GetKeyState(hotkeyEnable) & 0x1)
         {
-            std::cout << "[SUCCESS] ScriptHook enabled. [5.0]\n";
+            //std::cout << "[SUCCESS] ScriptHook enabled. [5.0]\n";
             WriteProcessMemory(hProcess, (LPVOID)(base + offset), enable, sizeof(enable), NULL);
             Sleep(4);
         }
 
         if (GetKeyState(hotkeyNormal) & 0x1)
         {
-            std::cout << "[SUCCESS] ScriptHook disabled. [5.1]\n";
+            //std::cout << "[SUCCESS] ScriptHook disabled. [5.1]\n";
             WriteProcessMemory(hProcess, (LPVOID)(base + offset), disable, sizeof(disable), NULL);
             Sleep(4);
         }
