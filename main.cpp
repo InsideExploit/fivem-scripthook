@@ -109,7 +109,7 @@ int main()
     uint8_t enable[] = { 0x1 };
     uint8_t disable[] = { 0x0 };
 
-    while (4)
+    while (true)
     {
         if (GetKeyState(hotkeyEnable) & 0x1)
         {
