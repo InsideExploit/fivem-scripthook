@@ -1,6 +1,9 @@
 # SHBypass-FiveM
 Unlock All for the latest update of SHBypass-FiveM official unknowncheats thread: https://www.unknowncheats.me/forum/fivem/430929-scripthookv-bypass-ban.html
 
+Credits:
+* All scanning functions are from https://guidedhacking.com/threads/external-internal-pattern-scanning-guide.14112/
+
 ```c++
 
 /*
