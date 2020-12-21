@@ -49,7 +49,6 @@ int main()
         std::ofstream configW;
         configW.open(configPath);
         configW << "{\n";
-        configW << "  \"sh_allow\": 903864,\n";
         configW << "  \"enable\": 112,\n";
         configW << "  \"disable\": 113\n";
         configW << "}";
@@ -67,7 +66,6 @@ int main()
 
     configR >> js;
 
-    uintptr_t offset = js["sh_allow"];
     int hotkeyEnable = js["enable"];
     int hotkeyNormal = js["disable"];
 
