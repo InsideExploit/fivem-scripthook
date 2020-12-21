@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "Memory.h"
+#include "Scan.h"
 
 #include <fstream>
 #include <filesystem>
@@ -9,7 +10,8 @@
 #include "Json.h"
 using namespace nlohmann;
 
-memory* mem;
+uint64_t sh_allow_address = 0;
+static bool status = false;
 
 std::string CurrentPath()
 {
@@ -17,6 +19,16 @@ std::string CurrentPath()
     std::string directory(cwd);
     std::free(cwd);
     return directory;
+}
+
+void scan_scripthook()
+{
+    Scan* scan = new Scan(Memory::hProc, Memory::modEntry);
+
+    const char* sh_allow_pattern = "48 8D 0D ? ? ? ? E8 ? ? ? ? 48 8D 0D ? ? ? ? 48 83 C4 ? E9 ? ? ? ? 48 8D 0D ? ? ? ?";
+    sh_allow_address = Memory::GetActualAddr((uint64_t)scan->PatternScan(sh_allow_pattern) + 0x3) + 0x8;
+
+    delete scan;
 }
 
 int main()
@@ -58,43 +70,35 @@ int main()
     uintptr_t offset = js["sh_allow"];
     int hotkeyEnable = js["enable"];
     int hotkeyNormal = js["disable"];
-    //float version = js["Version"];
 
-    /*
-    if (version != Config::Program::version)
-    {
-        std::cout << "[-] Please delete the old config.json";
-        exit(-7);
-    }
-    */
+    SetConsoleTitleA("SHBypass | FiveM | InsideExploit [UC]");
 
-    SetConsoleTitleA("SHBypass | FiveM | InsideExploit[UC]");
+    Memory::pid = Memory::GetProcessId("FiveM_GTAProcess.exe");
+    Memory::modEntry = Memory::GetModule(Memory::pid, "gta-core-five.dll");
+    Memory::hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Memory::pid);
 
-    DWORD ProcessID = mem->get_pid(L"FiveM_GTAProcess.exe"); if (!ProcessID) return false;
-    DWORD gta_base = mem->get_base(ProcessID, L"FiveM_GTAProcess.exe"); if (!gta_base) return false;
-    unsigned long long base = mem->get_base(ProcessID, L"gta-core-five.dll"); if (!base) return false;
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, ProcessID); if (!hProcess) return false;
-
-    if (!ProcessID)
+    if (!Memory::pid)
     {
         std::cout << "[ERROR] Could not get process id. [-1]\n";
         Sleep(1500);
         exit(-1);
     }
 
-    if (!hProcess)
+    if (Memory::modEntry.modBaseAddr == NULL || Memory::modEntry.modBaseSize == NULL)
+    {
+        std::cout << "[ERROR] Could not get base address. [-3]\n";
+        Sleep(1500);
+        exit(-3);
+    }
+
+    if (Memory::hProc == INVALID_HANDLE_VALUE)
     {
         std::cout << "[ERROR] Could not handle the process. [-2]\n";
         Sleep(1500);
         exit(-2);
     }
 
-    if (!base)
-    {
-        std::cout << "[ERROR] Could not get base address. [-3]\n";
-        Sleep(1500);
-        exit(-3);
-    }
+    scan_scripthook();
 
     std::cout << "[INFO] Please use an command.\n\n";
     std::cout << "[HOTKEY] F1: Enable.\n";
@@ -102,28 +106,20 @@ int main()
 
     std::cout << "\n[IMPORTANT] Remember, that one showed key are the default one.\n";
 
-
-    std::cout << "" << std::endl;
-
-
-    uint8_t enable[] = { 0x1 };
-    uint8_t disable[] = { 0x0 };
-
     while (true)
     {
-        if (GetKeyState(hotkeyEnable) & 0x1)
+        Sleep(1);
+
+        if (GetKeyState(hotkeyEnable))
         {
-            //std::cout << "[SUCCESS] ScriptHook enabled. [5.0]\n";
-            WriteProcessMemory(hProcess, (LPVOID)(base + offset), enable, sizeof(enable), NULL);
-            Sleep(4);
+            status = true;
+            WriteProcessMemory(Memory::hProc, (LPVOID)(Memory::modEntry.modBaseAddr + sh_allow_address), &status, sizeof(status), NULL);
         }
 
-        if (GetKeyState(hotkeyNormal) & 0x1)
+        if (GetKeyState(hotkeyNormal))
         {
-            //std::cout << "[SUCCESS] ScriptHook disabled. [5.1]\n";
-            WriteProcessMemory(hProcess, (LPVOID)(base + offset), disable, sizeof(disable), NULL);
-            Sleep(4);
+            status = false;
+            WriteProcessMemory(Memory::hProc, (LPVOID)(Memory::modEntry.modBaseAddr + sh_allow_address), &status, sizeof(status), NULL);
         }
     }
-    Sleep(1);
 }
