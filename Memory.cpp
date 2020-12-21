@@ -1,57 +1,54 @@
-#include "memory.h"
+#include "Memory.h"
 
-uintptr_t memory::get_base(DWORD procId, const wchar_t* modName)
+DWORD Memory::pid = 0;
+HANDLE Memory::hProc = 0;
+MODULEENTRY32 Memory::modEntry = { 0 };
+
+DWORD Memory::GetProcessId(const char* procName)
 {
-    uintptr_t modBaseAddr = 0;
-    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, procId);
+    DWORD pid = 0;
+    HANDLE hPID = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+    PROCESSENTRY32 ProcEntry;
+    ProcEntry.dwSize = sizeof(ProcEntry);
 
+    do
+    {
+        if (!strcmp(ProcEntry.szExeFile, procName))
+        {
+            pid = ProcEntry.th32ProcessID;
+            CloseHandle(hPID);
+            break;
+        }
+    } while (Process32Next(hPID, &ProcEntry));
+
+    return pid;
+}
+
+MODULEENTRY32 Memory::GetModule(DWORD procId, const char* modName)
+{
+    MODULEENTRY32 modEntry;
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, procId);
     if (hSnap != INVALID_HANDLE_VALUE)
     {
-        MODULEENTRY32 modEntry;
         modEntry.dwSize = sizeof(modEntry);
         if (Module32First(hSnap, &modEntry))
         {
             do
             {
-                if (!_wcsicmp(modEntry.szModule, modName))
+                if (!strcmp(modEntry.szModule, modName))
                 {
-                    modBaseAddr = (uintptr_t)modEntry.modBaseAddr;
                     break;
                 }
             } while (Module32Next(hSnap, &modEntry));
         }
     }
-
     CloseHandle(hSnap);
-    return modBaseAddr;
+    return modEntry;
 }
 
-DWORD memory::get_pid(const std::wstring& pName)
+uint64_t Memory::GetActualAddr(uint64_t addr, int off)
 {
-    PROCESSENTRY32 processInfo;
-    processInfo.dwSize = sizeof(processInfo);
-
-    HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-    if (processesSnapshot == INVALID_HANDLE_VALUE) {
-        return 0;
-    }
-
-    Process32First(processesSnapshot, &processInfo);
-    if (!pName.compare(processInfo.szExeFile))
-    {
-        CloseHandle(processesSnapshot);
-        return processInfo.th32ProcessID;
-    }
-
-    while (Process32Next(processesSnapshot, &processInfo))
-    {
-        if (!pName.compare(processInfo.szExeFile))
-        {
-            CloseHandle(processesSnapshot);
-            return processInfo.th32ProcessID;
-        }
-    }
-
-    CloseHandle(processesSnapshot);
-    return 0;
+    uint32_t address = 0x0;
+    address = (addr + Read<uint32_t>(addr) + off) - (uint64_t)modEntry.modBaseAddr;
+    return address;
 }
